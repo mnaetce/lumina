@@ -71,6 +71,7 @@ int main(int argc, char* argv[argc])
 		return 1;
 	}
 
+#ifndef LUMINA_NO_REPORT
 	cmd.count = 0;
 	nob_cmd_append(&cmd, "latex");
 	nob_cmd_append(&cmd, "-shell-escape");
@@ -81,6 +82,7 @@ int main(int argc, char* argv[argc])
 	if (!nob_cmd_run(&cmd)) {
 		return 1;
 	}
+#endif // LUMINA_NO_REPORT
 
 	return 0;
 }
