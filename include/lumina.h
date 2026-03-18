@@ -16,5 +16,6 @@ void lu_image_write(LuImage image);
 void lu_log_image_info(LuImage image);
 
 LuImage lu_enhance(LuImage input);
+LuImage lu_blur(LuImage input);
 
 #endif // LUMINA_H
