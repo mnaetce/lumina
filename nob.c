@@ -28,7 +28,10 @@ static struct {
 	const char* src;
 	const char* obj;
 } translation_units[] = {
+	{ .hdr = HDR_DIR "nob.h",             .src = SRC_DIR "nob.c",             .obj = OBJ_DIR "nob.o"             },
 	{ .hdr = HDR_DIR "main.h",            .src = SRC_DIR "main.c",            .obj = OBJ_DIR "main.o"            },
+	{ .hdr = HDR_DIR "utils.h",           .src = SRC_DIR "utils.c",           .obj = OBJ_DIR "utils.o"           },
+	{ .hdr = HDR_DIR "lumina.h",          .src = SRC_DIR "lumina.c",          .obj = OBJ_DIR "lumina.o"          },
 	{ .hdr = HDR_DIR "stb_image.h",       .src = SRC_DIR "stb_image.c",       .obj = OBJ_DIR "stb_image.o"       },
 	{ .hdr = HDR_DIR "stb_image_write.h", .src = SRC_DIR "stb_image_write.c", .obj = OBJ_DIR "stb_image_write.o" },
 };
