@@ -91,7 +91,7 @@ int main(int argc, char* argv[argc])
 	LuImage output = { 0 };
 	switch (task) {
 	case TASK_ENHC: output = lu_enhance(input); break;
-	case TASK_BLUR: LU_UNIMPLEMENTED(); break;
+	case TASK_BLUR: output = lu_blur(input); break;
 	case TASK_ARMF: LU_UNIMPLEMENTED(); break;
 	case TASK_GEMF: LU_UNIMPLEMENTED(); break;
 	case TASK_GLPF: LU_UNIMPLEMENTED(); break;

@@ -88,3 +88,60 @@ LuImage lu_enhance(LuImage input)
 
 	return output;
 }
+
+LuImage lu_blur(LuImage input)
+{
+	if (input.channels != 3) {
+		nob_log(NOB_ERROR, "We currently only support 3-channel RGB image enchancing");
+		exit(1);
+	}
+
+	size_t n       = input.width * input.height * input.channels;
+	LuImage output = {
+		.path     = lu_add_ext(input.path, ".jpg"),
+		.width    = input.width,
+		.height   = input.height,
+		.channels = input.channels,
+		.data     = calloc(n, sizeof(input.data[0])),
+	};
+
+	if (output.data == nullptr) {
+		nob_log(NOB_ERROR, "Could not allocate %zu bytes: %s", n, strerror(errno));
+		exit(1);
+	}
+
+	nob_log(NOB_INFO, "Blurring %s", input.path);
+
+	// image is a tensor of shape [HEIGHT, WIDTH, CHANNELS]
+	ssize_t strc = 1;
+	ssize_t strx = strc * input.channels;
+	ssize_t stry = strx * input.width;
+	for (ssize_t y = 0; y < input.height; ++y) {
+		for (ssize_t x = 0; x < input.width; ++x) {
+			for (ssize_t c = 0; c < input.channels; ++c) {
+				int avg_neighbours         = 0;
+				int valid_neighbours_count = 0;
+				for (ssize_t yy = y - 1; yy <= y + 1; ++yy) {
+					for (ssize_t xx = x - 1; xx <= x + 1; ++xx) {
+						int neighbour;
+						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
+							neighbour = 0;
+						} else {
+							ssize_t idx = yy * stry + xx * strx + c * strc;
+							neighbour   = input.data[idx];
+							valid_neighbours_count++;
+						}
+
+						avg_neighbours += neighbour;
+					}
+				}
+
+				avg_neighbours /= valid_neighbours_count;
+				ssize_t i      = y * stry + x * strx + c * strc;
+				output.data[i] = (stbi_uc)avg_neighbours;
+			}
+		}
+	}
+
+	return output;
+}
