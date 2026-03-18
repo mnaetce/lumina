@@ -53,7 +53,7 @@ LuImage lu_enhance(LuImage input)
 
 	size_t n       = input.width * input.height * input.channels;
 	LuImage output = {
-		.path     = lu_add_ext(input.path, ".jpg"),
+		.path     = lu_add_ext(input.path, "-lumina-enhanced.jpg"),
 		.width    = input.width,
 		.height   = input.height,
 		.channels = input.channels,
@@ -98,7 +98,7 @@ LuImage lu_blur(LuImage input)
 
 	size_t n       = input.width * input.height * input.channels;
 	LuImage output = {
-		.path     = lu_add_ext(input.path, ".jpg"),
+		.path     = lu_add_ext(input.path, "-lumina-blurred.jpg"),
 		.width    = input.width,
 		.height   = input.height,
 		.channels = input.channels,
