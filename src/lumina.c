@@ -54,10 +54,10 @@ void lu_image_log_info(LuImage image)
 	nob_log(NOB_INFO, "channels = %d", image.channels);
 }
 
-LuImage lu_enhance(LuImage input)
+LuImage lu_image_calloc_like(LuImage image, const char* ext)
 {
-	LuImage output = input;
-	output.path    = lu_add_ext(input.path, "-lumina-enhanced.jpg");
+	LuImage output = image;
+	output.path    = lu_add_ext(image.path, ext);
 	output.data    = calloc(output.count, sizeof(output.data[0]));
 
 	if (output.data == nullptr) {
@@ -65,7 +65,13 @@ LuImage lu_enhance(LuImage input)
 		exit(1);
 	}
 
+	return output;
+}
+
+LuImage lu_enhance(LuImage input)
+{
 	nob_log(NOB_INFO, "Enhancing %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-enhanced.jpg");
 
 	for (int i = 0; i < output.count; ++i) {
 		// Normalize to [-0.5, 0.5]
@@ -93,16 +99,8 @@ LuImage lu_enhance(LuImage input)
 
 LuImage lu_blur(LuImage input)
 {
-	LuImage output = input;
-	output.path    = lu_add_ext(input.path, "-lumina-blurred.jpg");
-	output.data    = calloc(output.count, sizeof(output.data[0]));
-
-	if (output.data == nullptr) {
-		nob_log(NOB_ERROR, "Could not allocate %d bytes: %s", output.count, strerror(errno));
-		exit(1);
-	}
-
 	nob_log(NOB_INFO, "Blurring %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-blurred.jpg");
 
 	for (int y = 0; y < input.height; ++y) {
 		for (int x = 0; x < input.width; ++x) {
