@@ -15,6 +15,11 @@ LuImage lu_image_load(const char* image_path)
 	LuImage image = { 0 };
 	image.path    = image_path;
 	image.data    = stbi_load_from_file(image_file, &image.width, &image.height, &image.channels, 3);
+	image.strc    = 1;
+	image.strx    = image.strc * image.channels;
+	image.stry    = image.strx * image.width;
+	image.count   = image.height * image.width * image.channels;
+
 	fclose(image_file);
 
 	if (image.data == nullptr) {
@@ -22,14 +27,14 @@ LuImage lu_image_load(const char* image_path)
 		exit(1);
 	}
 
-	lu_log_image_info(image);
+	lu_image_log_info(image);
 	return image;
 }
 
 void lu_image_write(LuImage image)
 {
 	nob_log(NOB_INFO, "Writing %s", image.path);
-	lu_log_image_info(image);
+	lu_image_log_info(image);
 	int result = stbi_write_jpg(image.path, image.width, image.height, image.channels, image.data, 100);
 	if (result == 0) {
 		nob_log(NOB_ERROR, "stb_image_write could not write file %s", image.path);
@@ -37,7 +42,7 @@ void lu_image_write(LuImage image)
 	}
 }
 
-void lu_log_image_info(LuImage image)
+void lu_image_log_info(LuImage image)
 {
 	nob_log(NOB_INFO, "width = %d", image.width);
 	nob_log(NOB_INFO, "height = %d", image.height);
@@ -51,23 +56,18 @@ LuImage lu_enhance(LuImage input)
 		exit(1);
 	}
 
-	size_t n       = input.width * input.height * input.channels;
-	LuImage output = {
-		.path     = lu_add_ext(input.path, "-lumina-enhanced.jpg"),
-		.width    = input.width,
-		.height   = input.height,
-		.channels = input.channels,
-		.data     = calloc(n, sizeof(input.data[0])),
-	};
+	LuImage output = input;
+	output.path    = lu_add_ext(input.path, "-lumina-enhanced.jpg");
+	output.data    = calloc(output.count, sizeof(output.data[0]));
 
 	if (output.data == nullptr) {
-		nob_log(NOB_ERROR, "Could not allocate %zu bytes: %s", n, strerror(errno));
+		nob_log(NOB_ERROR, "Could not allocate %d bytes: %s", output.count, strerror(errno));
 		exit(1);
 	}
 
 	nob_log(NOB_INFO, "Enhancing %s", input.path);
 
-	for (size_t i = 0; i < n; ++i) {
+	for (int i = 0; i < output.count; ++i) {
 		// Normalize to [-0.5, 0.5]
 		float norm = (float)input.data[i] / 255.0f - 0.5f;
 
@@ -89,6 +89,8 @@ LuImage lu_enhance(LuImage input)
 	return output;
 }
 
+#define LU_IMAGE_AT(image, y, x, c) ((image).data[(y) * (image).stry + (x) * (image).strx + (c) * (image).strc])
+
 LuImage lu_blur(LuImage input)
 {
 	if (input.channels != 3) {
@@ -96,39 +98,29 @@ LuImage lu_blur(LuImage input)
 		exit(1);
 	}
 
-	size_t n       = input.width * input.height * input.channels;
-	LuImage output = {
-		.path     = lu_add_ext(input.path, "-lumina-blurred.jpg"),
-		.width    = input.width,
-		.height   = input.height,
-		.channels = input.channels,
-		.data     = calloc(n, sizeof(input.data[0])),
-	};
+	LuImage output = input;
+	output.path    = lu_add_ext(input.path, "-lumina-blurred.jpg");
+	output.data    = calloc(output.count, sizeof(output.data[0]));
 
 	if (output.data == nullptr) {
-		nob_log(NOB_ERROR, "Could not allocate %zu bytes: %s", n, strerror(errno));
+		nob_log(NOB_ERROR, "Could not allocate %d bytes: %s", output.count, strerror(errno));
 		exit(1);
 	}
 
 	nob_log(NOB_INFO, "Blurring %s", input.path);
 
-	// image is a tensor of shape [HEIGHT, WIDTH, CHANNELS]
-	ssize_t strc = 1;
-	ssize_t strx = strc * input.channels;
-	ssize_t stry = strx * input.width;
-	for (ssize_t y = 0; y < input.height; ++y) {
-		for (ssize_t x = 0; x < input.width; ++x) {
-			for (ssize_t c = 0; c < input.channels; ++c) {
+	for (int y = 0; y < input.height; ++y) {
+		for (int x = 0; x < input.width; ++x) {
+			for (int c = 0; c < input.channels; ++c) {
 				int avg_neighbours         = 0;
 				int valid_neighbours_count = 0;
-				for (ssize_t yy = y - 1; yy <= y + 1; ++yy) {
-					for (ssize_t xx = x - 1; xx <= x + 1; ++xx) {
+				for (int yy = y - 1; yy <= y + 1; ++yy) {
+					for (int xx = x - 1; xx <= x + 1; ++xx) {
 						int neighbour;
 						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
 							neighbour = 0;
 						} else {
-							ssize_t idx = yy * stry + xx * strx + c * strc;
-							neighbour   = input.data[idx];
+							neighbour = LU_IMAGE_AT(input, yy, xx, c);
 							valid_neighbours_count++;
 						}
 
@@ -137,8 +129,7 @@ LuImage lu_blur(LuImage input)
 				}
 
 				avg_neighbours /= valid_neighbours_count;
-				ssize_t i      = y * stry + x * strx + c * strc;
-				output.data[i] = (stbi_uc)avg_neighbours;
+				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
 			}
 		}
 	}
