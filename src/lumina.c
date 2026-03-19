@@ -15,10 +15,15 @@ LuImage lu_image_load(const char* image_path)
 	LuImage image = { 0 };
 	image.path    = image_path;
 	image.data    = stbi_load_from_file(image_file, &image.width, &image.height, &image.channels, 3);
-	image.strc    = 1;
-	image.strx    = image.strc * image.channels;
-	image.stry    = image.strx * image.width;
-	image.count   = image.height * image.width * image.channels;
+	if (image.channels != 3) {
+		nob_log(NOB_ERROR, "We currently only support 3-channel RGB images.");
+		exit(1);
+	}
+
+	image.strc  = 1;
+	image.strx  = image.strc * image.channels;
+	image.stry  = image.strx * image.width;
+	image.count = image.height * image.width * image.channels;
 
 	fclose(image_file);
 
@@ -51,11 +56,6 @@ void lu_image_log_info(LuImage image)
 
 LuImage lu_enhance(LuImage input)
 {
-	if (input.channels != 3) {
-		nob_log(NOB_ERROR, "We currently only support 3-channel RGB image enchancing");
-		exit(1);
-	}
-
 	LuImage output = input;
 	output.path    = lu_add_ext(input.path, "-lumina-enhanced.jpg");
 	output.data    = calloc(output.count, sizeof(output.data[0]));
@@ -93,11 +93,6 @@ LuImage lu_enhance(LuImage input)
 
 LuImage lu_blur(LuImage input)
 {
-	if (input.channels != 3) {
-		nob_log(NOB_ERROR, "We currently only support 3-channel RGB image enchancing");
-		exit(1);
-	}
-
 	LuImage output = input;
 	output.path    = lu_add_ext(input.path, "-lumina-blurred.jpg");
 	output.data    = calloc(output.count, sizeof(output.data[0]));
