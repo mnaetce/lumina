@@ -46,7 +46,7 @@
 The source code for this report can be found at:
 \href{https://github.com/mnaetce/lumina}{lumina}
 
-\subsection{Thirdparty Dependencies}
+\section{Thirdparty Dependencies}
 \begin{itemize}
 	\item \textbf{nob.h:}
 	      For building the C source code and
@@ -63,52 +63,34 @@ The source code for this report can be found at:
 	      {raysan5/raylib}).
 \end{itemize}
 
-\subsection{Task 1: Contrast Enhancement}
-\textbf{Task:} Take an input image that has been acquired in poor light, and hence has poor contrast. Apply a suitable image enhancement algorithm, show the input image and the output image and also include the program in the report.
+\section{Tasks}
+\subsection{Contrast Enhancement}
+\subsubsection{Task}
+Take an input image that has been acquired in poor light, and hence has poor contrast. Apply a suitable image enhancement algorithm, show the input image and the output image and also include the program in the report.
 
 \subsubsection{Algorithm Used}
-Linear Contrast Scaling with $scale = 1.5$
+\textbf{Linear Contrast Scaling} with $scale = 1.5$
 
-\newpage
-\subsection{Input and Output Images}
+\subsubsection{Input and Output Images}
 \begin{figure}[!ht]
 	\center
-	\includegraphics[width=0.90\linewidth]
+	\includegraphics[width=0.65\linewidth]
 	{data/single-fresh-red-strawberry-on-table-green-background-food-fruit-sweet-macro-juicy-plant-image-photo.jpg}
 	\caption{Input Image (Poor Contrast)}
 	\vspace{1cm}
-	\includegraphics[width=0.90\linewidth]
+	\includegraphics[width=0.65\linewidth]
 	{data/single-fresh-red-strawberry-on-table-green-background-food-fruit-sweet-macro-juicy-plant-image-photo.jpg-lumina-enhanced.jpg}
 	\caption{Output Image (Enhanced)}
 \end{figure}
 
-\newpage
-\subsection{C Program (only showing the relevant function)}
+\subsubsection{C Program}
 \begin{minted}{c}
 LuImage lu_enhance(LuImage input)
 {
-	if (input.channels != 3) {
-		nob_log(NOB_ERROR, "We currently only support 3-channel RGB image enchancing");
-		exit(1);
-	}
-
-	size_t n       = input.width * input.height * input.channels;
-	LuImage output = {
-		.path     = lu_add_ext(input.path),
-		.width    = input.width,
-		.height   = input.height,
-		.channels = input.channels,
-		.data     = calloc(n, sizeof(input.data[0])),
-	};
-
-	if (output.data == nullptr) {
-		nob_log(NOB_ERROR, "Could not allocate %zu bytes: %s", n, strerror(errno));
-		exit(1);
-	}
-
 	nob_log(NOB_INFO, "Enhancing %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-enhanced.jpg");
 
-	for (size_t i = 0; i < n; ++i) {
+	for (int i = 0; i < output.count; ++i) {
 		// Normalize to [-0.5, 0.5]
 		float norm = (float)input.data[i] / 255.0f - 0.5f;
 
@@ -125,6 +107,67 @@ LuImage lu_enhance(LuImage input)
 
 		// write
 		output.data[i] = (stbi_uc)byte;
+	}
+
+	return output;
+}
+\end{minted}
+
+\newpage
+\subsection{Blurring}
+\subsubsection{Task}
+Write a program to blur an image. Show the input image, the output image and also include the program in the report.
+
+\subsubsection{Algorithm Used}
+\textbf{Box Blur} with dynamic kernel bounds.
+
+\subsubsection{Input and Output Images}
+\begin{figure}[!ht]
+	\center
+	\includegraphics[width=0.65\linewidth]
+	{data/single-fresh-red-strawberry-on-table-green-background-food-fruit-sweet-macro-juicy-plant-image-photo.jpg}
+	\caption{Input Image (Sharp)}
+	\vspace{1cm}
+	\includegraphics[width=0.65\linewidth]
+	{data/single-fresh-red-strawberry-on-table-green-background-food-fruit-sweet-macro-juicy-plant-image-photo.jpg-lumina-blurred.jpg}
+	\caption{Output Image (Blurred)}
+\end{figure}
+
+\newpage
+\subsubsection{C Program}
+\begin{minted}{c}
+LuImage lu_blur(LuImage input)
+{
+	nob_log(NOB_INFO, "Blurring %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-blurred.jpg");
+
+	for (int y = 0; y < input.height; ++y) {
+		for (int x = 0; x < input.width; ++x) {
+			for (int c = 0; c < input.channels; ++c) {
+				// For each pixel and for each channel in the pixel,
+				// Average out the neighbouring pixels
+				// For edges of the image, only use the valid pixels.
+				int avg_neighbours         = 0;
+				int valid_neighbours_count = 0;
+				for (int yy = y - 1; yy <= y + 1; ++yy) {
+					for (int xx = x - 1; xx <= x + 1; ++xx) {
+						int neighbour;
+						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
+							neighbour = 0;
+						} else {
+							neighbour = LU_IMAGE_AT(input, yy, xx, c);
+							valid_neighbours_count++;
+						}
+
+						avg_neighbours += neighbour;
+					}
+				}
+
+				// Write the average value of the channel to the output
+				avg_neighbours /= valid_neighbours_count;
+				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
+			}
+		}
 	}
 
 	return output;
