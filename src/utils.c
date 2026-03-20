@@ -10,7 +10,12 @@ bool lu_str_eq(const char* a, const char* b)
 
 char* lu_add_ext(const char* path, const char* ext)
 {
-	size_t old_len = strlen(path);
+	const char* dot_ptr = strrchr(path, '.');
+	size_t old_len      = 0;
+	for (const char* path_ptr = path; *path_ptr && path_ptr != dot_ptr; path_ptr++) {
+		old_len++;
+	}
+
 	size_t new_len = old_len + strlen(ext);
 	char* buff     = calloc(new_len + 1, sizeof(char));
 	if (buff == nullptr) {
@@ -18,7 +23,7 @@ char* lu_add_ext(const char* path, const char* ext)
 		exit(1);
 	}
 
-	strcpy(buff, path);
+	memcpy(buff, path, old_len * sizeof(char));
 	strcat(buff, ext);
 
 	return buff;
