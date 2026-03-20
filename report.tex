@@ -85,7 +85,7 @@ Take an input image that has been acquired in poor light, and hence has poor con
 
 \subsubsection{C Program}
 \begin{minted}{c}
-LuImage lu_enhance(LuImage input)
+LuImage lu_enhance(LuImage input, float scale)
 {
 	nob_log(NOB_INFO, "Enhancing %s", input.path);
 	LuImage output = lu_image_calloc_like(input, "-lumina-enhanced.jpg");
@@ -95,7 +95,6 @@ LuImage lu_enhance(LuImage input)
 		float norm = (float)input.data[i] / 255.0f - 0.5f;
 
 		// scale and clip
-		float scale = 1.5f;
 		norm *= scale; // [-scale * 0.5, scale * 0.5];
 		if (norm < -0.5f) norm = -0.5f;
 		if (norm > +0.5f) norm = +0.5f;
@@ -136,7 +135,7 @@ Write a program to blur an image. Show the input image, the output image and als
 \newpage
 \subsubsection{C Program}
 \begin{minted}{c}
-LuImage lu_blur(LuImage input)
+LuImage lu_blur(LuImage input, int radius)
 {
 	nob_log(NOB_INFO, "Blurring %s", input.path);
 	LuImage output = lu_image_calloc_like(input, "-lumina-blurred.jpg");
@@ -144,13 +143,11 @@ LuImage lu_blur(LuImage input)
 	for (int y = 0; y < input.height; ++y) {
 		for (int x = 0; x < input.width; ++x) {
 			for (int c = 0; c < input.channels; ++c) {
-				// For each pixel and for each channel in the pixel,
-				// Average out the neighbouring pixels
-				// For edges of the image, only use the valid pixels.
-				int avg_neighbours         = 0;
-				int valid_neighbours_count = 0;
-				for (int yy = y - 1; yy <= y + 1; ++yy) {
-					for (int xx = x - 1; xx <= x + 1; ++xx) {
+				int avg_neighbours          = 0;
+				int valid_neighbours_count  = 0;
+				int farthest_pixel_distance = (2 * radius) - 1;
+				for (int yy = y - farthest_pixel_distance; yy <= y + farthest_pixel_distance; ++yy) {
+					for (int xx = x - farthest_pixel_distance; xx <= x + farthest_pixel_distance; ++xx) {
 						int neighbour;
 						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
 							neighbour = 0;
@@ -163,7 +160,6 @@ LuImage lu_blur(LuImage input)
 					}
 				}
 
-				// Write the average value of the channel to the output
 				avg_neighbours /= valid_neighbours_count;
 				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
 			}

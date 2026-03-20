@@ -68,7 +68,7 @@ LuImage lu_image_calloc_like(LuImage image, const char* ext)
 	return output;
 }
 
-LuImage lu_enhance(LuImage input)
+LuImage lu_enhance(LuImage input, float scale)
 {
 	nob_log(NOB_INFO, "Enhancing %s", input.path);
 	LuImage output = lu_image_calloc_like(input, "-lumina-enhanced.jpg");
@@ -78,7 +78,6 @@ LuImage lu_enhance(LuImage input)
 		float norm = (float)input.data[i] / 255.0f - 0.5f;
 
 		// scale and clip
-		float scale = 1.5f;
 		norm *= scale; // [-scale * 0.5, scale * 0.5];
 		if (norm < -0.5f) norm = -0.5f;
 		if (norm > +0.5f) norm = +0.5f;
@@ -97,7 +96,7 @@ LuImage lu_enhance(LuImage input)
 
 #define LU_IMAGE_AT(image, y, x, c) ((image).data[(y) * (image).stry + (x) * (image).strx + (c) * (image).strc])
 
-LuImage lu_blur(LuImage input)
+LuImage lu_blur(LuImage input, int radius)
 {
 	nob_log(NOB_INFO, "Blurring %s", input.path);
 	LuImage output = lu_image_calloc_like(input, "-lumina-blurred.jpg");
@@ -105,10 +104,11 @@ LuImage lu_blur(LuImage input)
 	for (int y = 0; y < input.height; ++y) {
 		for (int x = 0; x < input.width; ++x) {
 			for (int c = 0; c < input.channels; ++c) {
-				int avg_neighbours         = 0;
-				int valid_neighbours_count = 0;
-				for (int yy = y - 1; yy <= y + 1; ++yy) {
-					for (int xx = x - 1; xx <= x + 1; ++xx) {
+				int avg_neighbours          = 0;
+				int valid_neighbours_count  = 0;
+				int farthest_pixel_distance = (2 * radius) - 1;
+				for (int yy = y - farthest_pixel_distance; yy <= y + farthest_pixel_distance; ++yy) {
+					for (int xx = x - farthest_pixel_distance; xx <= x + farthest_pixel_distance; ++xx) {
 						int neighbour;
 						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
 							neighbour = 0;

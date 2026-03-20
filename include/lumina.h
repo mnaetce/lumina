@@ -23,7 +23,7 @@ LuImage lu_image_load(const char* image_path);
 void lu_image_write(LuImage image);
 void lu_image_log_info(LuImage image);
 
-LuImage lu_enhance(LuImage input);
-LuImage lu_blur(LuImage input);
+LuImage lu_enhance(LuImage input, float scale);
+LuImage lu_blur(LuImage input, int radius);
 
 #endif // LUMINA_H
