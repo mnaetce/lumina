@@ -2,6 +2,7 @@
 #include "nob.h"
 #include "utils.h"
 #include "stb_image_write.h"
+#include <math.h>
 
 LuImage lu_image_load(const char* image_path)
 {
@@ -122,6 +123,75 @@ LuImage lu_blur(LuImage input, int radius)
 				}
 
 				avg_neighbours /= valid_neighbours_count;
+				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
+			}
+		}
+	}
+
+	return output;
+}
+
+LuImage lu_arithmetic_mean_filter(LuImage input)
+{
+	nob_log(NOB_INFO, "Applying Arithmetic Mean Filter to %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-arithmetic-mean-filtered.jpg");
+
+	for (int y = 0; y < input.height; ++y) {
+		for (int x = 0; x < input.width; ++x) {
+			for (int c = 0; c < input.channels; ++c) {
+				int avg_neighbours          = 0;
+				int valid_neighbours_count  = 0;
+				int farthest_pixel_distance = 1;
+				for (int yy = y - farthest_pixel_distance; yy <= y + farthest_pixel_distance; ++yy) {
+					for (int xx = x - farthest_pixel_distance; xx <= x + farthest_pixel_distance; ++xx) {
+						int neighbour;
+						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
+							neighbour = 0;
+						} else {
+							neighbour = LU_IMAGE_AT(input, yy, xx, c);
+							valid_neighbours_count++;
+						}
+
+						avg_neighbours += neighbour;
+					}
+				}
+
+				avg_neighbours /= valid_neighbours_count;
+				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
+			}
+		}
+	}
+
+	return output;
+}
+
+LuImage lu_geometric_mean_filter(LuImage input)
+{
+	nob_log(NOB_INFO, "Applying Geometric Mean Filter to %s", input.path);
+	LuImage output = lu_image_calloc_like(input, "-lumina-geometric-mean-filtered.jpg");
+
+	for (int y = 0; y < input.height; ++y) {
+		for (int x = 0; x < input.width; ++x) {
+			for (int c = 0; c < input.channels; ++c) {
+				float avg_neighbours        = 1.0f;
+				int valid_neighbours_count  = 0;
+				int farthest_pixel_distance = 1;
+				for (int yy = y - farthest_pixel_distance; yy <= y + farthest_pixel_distance; ++yy) {
+					for (int xx = x - farthest_pixel_distance; xx <= x + farthest_pixel_distance; ++xx) {
+						int neighbour;
+						if (xx < 0 || xx >= input.width || yy < 0 || yy >= input.height) {
+							neighbour = 0;
+						} else {
+							neighbour = LU_IMAGE_AT(input, yy, xx, c);
+							valid_neighbours_count++;
+						}
+
+						avg_neighbours *= neighbour;
+					}
+				}
+
+				float power                  = 1.0f / valid_neighbours_count;
+				avg_neighbours               = powf(avg_neighbours, power);
 				LU_IMAGE_AT(output, y, x, c) = (stbi_uc)avg_neighbours;
 			}
 		}

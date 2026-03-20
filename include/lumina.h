@@ -25,5 +25,7 @@ void lu_image_log_info(LuImage image);
 
 LuImage lu_enhance(LuImage input, float scale);
 LuImage lu_blur(LuImage input, int radius);
+LuImage lu_arithmetic_mean_filter(LuImage input);
+LuImage lu_geometric_mean_filter(LuImage input);
 
 #endif // LUMINA_H
